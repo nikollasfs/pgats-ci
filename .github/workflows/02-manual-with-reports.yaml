@@ -9,6 +9,14 @@ name: 'Execução Manual com Relatórios'
 on:
   workflow_dispatch:
 
+# Permissões necessárias para as ações
+permissions:
+  contents: write
+  checks: write
+  pull-requests: write
+  pages: write
+  id-token: write
+
 #tarefas dentro do pipeline = jobs
 
 jobs: 
