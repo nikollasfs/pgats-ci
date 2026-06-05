@@ -63,32 +63,33 @@ Foi analisado o GitHub Marketplace e selecionada as seguintes ações que agrega
 
 ---
 
-## 3. **Deploy Folder to GitHub Pages** 
-**Autor**: dawidd6  
-**URL**: `dawidd6/action-deploy-folder@v1`  
+## 3. **GitHub Pages Deploy** 
+**Autor**: peaceiris  
+**URL**: `peaceiris/actions-gh-pages@v3`  
 **Intenção**: Publicar relatórios em um website acessível
 
 ### O que faz:
 - Faz deploy de pastas para GitHub Pages
-- Cria histórico de builds
+- Mantém histórico de builds
 - Mantém versões anteriores acessíveis
 - URL pública para todos os relatórios
 
 ### Implementado em:
 ```yaml
-- uses: dawidd6/action-deploy-folder@v1
+- uses: peaceiris/actions-gh-pages@v3
   with:
-    folder: playwright-report
-    target-folder: e2e-reports
-    clean-publish-folder: false
-    commit-message: "Deploy Playwright Report"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    publish_dir: playwright-report
+    destination_dir: e2e-reports
+    keep_files: true
 ```
 
 ### Benefícios:
 ✅ Relatórios acessíveis 24/7 via web  
-✅ Sharable links com stakeholders  
+✅ Shareable links com stakeholders  
 ✅ Histórico completo de execuções  
 ✅ Não precisa autenticação para visualizar  
+✅ Ação oficial e bem mantida  
 
 ---
 
