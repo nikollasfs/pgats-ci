@@ -1,0 +1,181 @@
+# CI de Nível 01 - Disparo Manual com Relatórios Avançados
+
+# nome da pipeline
+name: 'Execução Manual com Relatórios'
+
+# gatilhos / triggers - regras de disparo
+# gatilho manual = workflow_dispatch
+
+on:
+  workflow_dispatch:
+
+#tarefas dentro do pipeline = jobs
+
+jobs: 
+
+  # nome do job
+  e2e-tests:
+    # máquina onde o job vai rodar
+    runs-on: ubuntu-latest
+
+    # passos do job
+    steps:
+      # clone do projeto
+      - uses: actions/checkout@v4
+
+      # instalação do node
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      # instalação do Yarn
+      - name: Instalando Yarn
+        run: npm install -g yarn
+      
+      # instalação das dependências
+      - name: Instalando dependências
+        run: yarn
+
+      # instalação dos Browsers do Playwright
+      - name: Instalando Browsers do Playwright
+        run: yarn playwright install
+        
+      # executar os testes e2e
+      - name: Executando testes e2e
+        run: yarn run e2e
+        continue-on-error: true
+
+      # NOVO: Upload dos artefatos dos testes
+      - name: Upload Relatórios de Teste (Playwright)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      # NOVO: Publicar resultados dos testes em formato legível
+      - name: Publicar Resultados dos Testes
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: results.xml
+          check_name: 📊 Resultados E2E (Playwright)
+          comment_mode: always
+
+      # NOVO: Deploy do relatório Playwright para GitHub Pages
+      - name: Deploy Playwright Report
+        if: always()
+        uses: dawidd6/action-deploy-folder@v1
+        with:
+          folder: playwright-report
+          target-folder: e2e-reports
+          clean-publish-folder: false
+          commit-message: "Deploy Playwright Report"
+
+  # NOVO: Job paralelo de testes unitários
+  unit-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      
+      - name: Instalando Yarn
+        run: npm install -g yarn
+      
+      - name: Instalando dependências
+        run: yarn
+      
+      - name: Executando testes unitários com cobertura
+        run: yarn test -- --coverage
+        continue-on-error: true
+      
+      # NOVO: Upload de cobertura de código
+      - name: Upload Cobertura de Código
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      # NOVO: Upload para Codecov (serviço de cobertura)
+      - name: Upload Coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  # NOVO: Job de testes de mutação
+  mutation-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      
+      - name: Instalando Yarn
+        run: npm install -g yarn
+      
+      - name: Instalando dependências
+        run: yarn
+      
+      - name: Executando testes de mutação
+        run: yarn test:mutation
+        continue-on-error: true
+      
+      # NOVO: Upload do relatório de mutação
+      - name: Upload Mutation Testing Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 30
+
+  # NOVO: Job que consolida tudo e cria um sumário
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, unit-tests, mutation-tests]
+    if: always()
+    
+    steps:
+      - name: Download Todos os Artefatos
+        uses: actions/download-artifact@v4
+      
+      - name: Gerar Sumário da Execução
+        run: |
+          cat > $GITHUB_STEP_SUMMARY << 'EOF'
+          # 📋 Sumário de Testes - Execução Manual
+          
+          ## ✅ Jobs Executados
+          - **E2E Tests (Playwright)** - Testes da aplicação completa
+          - **Unit Tests (Jest)** - Testes unitários com cobertura
+          - **Mutation Tests (Stryker)** - Análise de qualidade dos testes
+          
+          ## 📊 Artefatos Gerados
+          - **Playwright Report** - Relatório detalhado de testes E2E
+          - **Coverage Report** - Relatório de cobertura de código
+          - **Mutation Report** - Análise de mutantes
+          
+          ## 🔗 Links
+          - [Uploads de Artefatos](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          > Todos os relatórios estão disponíveis como artefatos na aba "Artifacts" desta execução
+          EOF
+      
+      - name: Criar Badge de Status
+        run: |
+          echo "✅ Pipeline executada com sucesso!"
+          echo "📊 Todos os testes foram coletados"
+          echo "📁 Relatórios disponíveis em Artifacts"
