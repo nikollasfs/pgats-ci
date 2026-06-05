@@ -1,0 +1,146 @@
+# CI Pipeline - Executada em Self-Hosted Runner
+name: 'Testes em Self-Hosted Runner'
+
+on:
+  workflow_dispatch:
+  # Descomente para executar em todo push
+  # push:
+  #   branches: [master, main]
+
+permissions:
+  contents: write
+  checks: write
+  pull-requests: write
+  pages: write
+  id-token: write
+
+jobs:
+  test-on-self-hosted:
+    # Use a label do seu runner (ajuste conforme sua máquina)
+    runs-on: [self-hosted, linux]
+    
+    steps:
+      - name: 🖥️ Validar Ambiente do Runner
+        run: |
+          echo "════════════════════════════════════"
+          echo "     INFORMAÇÕES DO RUNNER"
+          echo "════════════════════════════════════"
+          echo "🖥️ Hostname: $(hostname)"
+          echo "📍 Sistema: $(uname -s) $(uname -r)"
+          echo "💾 Processadores: $(nproc)"
+          echo "🧠 Memória: $(free -h | grep Mem | awk '{print $2}')"
+          echo "📦 Node: $(node --version)"
+          echo "🧶 Yarn: $(yarn --version)"
+          echo "🐙 Git: $(git --version)"
+          echo "════════════════════════════════════"
+          echo ""
+          echo "Espaço em disco:"
+          df -h | grep -E '(Filesystem|/$)' || df -h | head -2
+      
+      - name: 📡 Checkout do Repositório
+        uses: actions/checkout@v4
+      
+      - name: 💾 Cache de Dependências
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            .yarn-cache
+            .playwright
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      
+      - name: 📦 Instalar Dependências
+        run: yarn install --prefer-offline --frozen-lockfile
+      
+      - name: 🎭 Instalar Browsers Playwright
+        run: yarn playwright install
+      
+      - name: 🧪 Executar Testes Unitários
+        run: yarn test -- --coverage --collectCoverageFrom="src/**/*.js"
+      
+      - name: 🧬 Executar Testes de Mutação
+        run: yarn test:mutation
+        continue-on-error: true
+      
+      - name: 🎬 Executar Testes E2E
+        run: yarn run e2e
+      
+      - name: 📤 Upload Artefatos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-hosted-reports-${{ runner.name }}
+          path: |
+            coverage/
+            reports/
+            playwright-report/
+            results.xml
+          retention-days: 30
+      
+      - name: 📊 Publicar Resultados dos Testes
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: results.xml
+          check_name: 📊 Resultados E2E - Self-Hosted
+          comment_mode: always
+      
+      - name: ✅ Sumário da Execução
+        if: always()
+        run: |
+          cat > summary.txt << 'EOF'
+          # 📋 Sumário - Self-Hosted Runner
+          
+          **Runner**: ${{ runner.name }}
+          **Sistema**: ${{ runner.os }}
+          **Timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          ## Testes Executados
+          - ✅ Unitários (Jest)
+          - ✅ Mutação (Stryker)
+          - ✅ E2E (Playwright)
+          
+          ## Relatórios
+          - Coverage: `coverage/lcov-report/`
+          - Mutation: `reports/mutation/`
+          - Playwright: `playwright-report/`
+          EOF
+          
+          cat summary.txt
+
+  # Job para comparar GitHub-hosted vs Self-hosted (opcional)
+  compare-runners:
+    runs-on: ubuntu-latest
+    needs: test-on-self-hosted
+    if: always()
+    
+    steps:
+      - name: 📊 Resumo Comparativo
+        run: |
+          echo "╔════════════════════════════════════════════╗"
+          echo "║  Comparação: GitHub-Hosted vs Self-Hosted  ║"
+          echo "╚════════════════════════════════════════════╝"
+          echo ""
+          echo "GitHub-Hosted (ubuntu-latest):"
+          echo "  • 2 vCPU"
+          echo "  • 7 GB RAM"
+          echo "  • 14 GB SSD"
+          echo "  • ~45s para inicializar"
+          echo ""
+          echo "Self-Hosted (sua máquina):"
+          echo "  • Configurável"
+          echo "  • Recursos locais"
+          echo "  • Inicialização instantânea"
+          echo "  • Cache persistente"
+          echo ""
+          echo "✅ Use Self-Hosted para:"
+          echo "  • Testes intensivos"
+          echo "  • Dados sensíveis"
+          echo "  • Dependências customizadas"
+          echo ""
+          echo "✅ Use GitHub-hosted para:"
+          echo "  • Testes simples"
+          echo "  • Projetos open-source"
+          echo "  • CI/CD inicial"
