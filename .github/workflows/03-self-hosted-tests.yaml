@@ -3,9 +3,6 @@ name: 'Testes em Self-Hosted Runner'
 
 on:
   workflow_dispatch:
-  # Descomente para executar em todo push
-  # push:
-  #   branches: [master, main]
 
 permissions:
   contents: write
@@ -16,27 +13,31 @@ permissions:
 
 jobs:
   test-on-self-hosted:
-    # Use a label do seu runner (ajuste conforme sua máquina)
-    runs-on: [self-hosted, linux]
+    # Use a label do seu runner Windows (ajuste conforme sua máquina)
+    runs-on: [self-hosted, windows]
     
     steps:
-      - name: 🖥️ Validar Ambiente do Runner
+      - name: 🖥️ Validar Ambiente do Runner (Windows)
+        shell: pwsh
         run: |
-          echo "════════════════════════════════════"
-          echo "     INFORMAÇÕES DO RUNNER"
-          echo "════════════════════════════════════"
-          echo "🖥️ Hostname: $(hostname)"
-          echo "📍 Sistema: $(uname -s) $(uname -r)"
-          echo "💾 Processadores: $(nproc)"
-          echo "🧠 Memória: $(free -h | grep Mem | awk '{print $2}')"
-          echo "📦 Node: $(node --version)"
-          echo "🧶 Yarn: $(yarn --version)"
-          echo "🐙 Git: $(git --version)"
-          echo "════════════════════════════════════"
-          echo ""
-          echo "Espaço em disco:"
-          df -h | grep -E '(Filesystem|/$)' || df -h | head -2
-      
+          Write-Host "════════════════════════════════════"
+          Write-Host "     INFORMAÇÕES DO RUNNER"
+          Write-Host "════════════════════════════════════"
+          Write-Host "🖥️ Hostname: $env:COMPUTERNAME"
+          $os = (Get-CimInstance Win32_OperatingSystem).Caption
+          $version = (Get-CimInstance Win32_OperatingSystem).Version
+          Write-Host "📍 Sistema: $os ($version)"
+          Write-Host "💾 Processadores: $env:NUMBER_OF_PROCESSORS"
+          $memGB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
+          Write-Host "🧠 Memória: ${memGB} GB"
+          Write-Host "📦 Node: $(node --version 2>$null)"
+          Write-Host "🧶 Yarn: $(yarn --version 2>$null)"
+          Write-Host "🐙 Git: $(git --version 2>$null)"
+          Write-Host "════════════════════════════════════"
+          Write-Host ""
+          Write-Host "Espaço em disco:"
+          Get-PSDrive -PSProvider FileSystem | Format-Table -AutoSize
+
       - name: 📡 Checkout do Repositório
         uses: actions/checkout@v4
       
@@ -89,13 +90,14 @@ jobs:
       
       - name: ✅ Sumário da Execução
         if: always()
+        shell: pwsh
         run: |
-          cat > summary.txt << 'EOF'
+          $summary = @"
           # 📋 Sumário - Self-Hosted Runner
           
           **Runner**: ${{ runner.name }}
           **Sistema**: ${{ runner.os }}
-          **Timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          **Timestamp**: $(Get-Date -Format o)
           
           ## Testes Executados
           - ✅ Unitários (Jest)
@@ -106,9 +108,10 @@ jobs:
           - Coverage: `coverage/lcov-report/`
           - Mutation: `reports/mutation/`
           - Playwright: `playwright-report/`
-          EOF
-          
-          cat summary.txt
+          "@
+
+          $summary | Out-File -FilePath summary.txt -Encoding utf8
+          Get-Content summary.txt
 
   # Job para comparar GitHub-hosted vs Self-hosted (opcional)
   compare-runners:
@@ -144,3 +147,4 @@ jobs:
           echo "  • Testes simples"
           echo "  • Projetos open-source"
           echo "  • CI/CD inicial"
+          
