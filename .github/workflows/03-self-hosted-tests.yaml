@@ -14,7 +14,7 @@ permissions:
 jobs:
   test-on-self-hosted:
     # Use a label do seu runner Windows (ajuste conforme sua máquina)
-    runs-on: [self-hosted, Windows]
+    runs-on: [self-hosted, Windows, X64]
     
     steps:
       - name: 🖥️ Validar Ambiente do Runner (Windows)
@@ -53,19 +53,24 @@ jobs:
             ${{ runner.os }}-yarn-
       
       - name: 📦 Instalar Dependências
+        shell: powershell
         run: yarn install --prefer-offline --frozen-lockfile
       
       - name: 🎭 Instalar Browsers Playwright
+        shell: powershell
         run: yarn playwright install
       
       - name: 🧪 Executar Testes Unitários
+        shell: powershell
         run: yarn test -- --coverage --collectCoverageFrom="src/**/*.js"
       
       - name: 🧬 Executar Testes de Mutação
+        shell: powershell
         run: yarn test:mutation
         continue-on-error: true
       
       - name: 🎬 Executar Testes E2E
+        shell: powershell
         run: yarn run e2e
       
       - name: 📤 Upload Artefatos
@@ -79,14 +84,6 @@ jobs:
             playwright-report/
             results.xml
           retention-days: 30
-      
-      - name: 📊 Publicar Resultados dos Testes
-        if: always()
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        with:
-          files: results.xml
-          check_name: 📊 Resultados E2E - Self-Hosted
-          comment_mode: always
       
       - name: ✅ Sumário da Execução
         if: always()
@@ -113,13 +110,25 @@ jobs:
           $summary | Out-File -FilePath summary.txt -Encoding utf8
           Get-Content summary.txt
 
-  # Job para comparar GitHub-hosted vs Self-hosted (opcional)
+  # Job para comparar GitHub-hosted vs Self-hosted (opcional) e publicar resultados (action que requer container)
   compare-runners:
     runs-on: ubuntu-latest
     needs: test-on-self-hosted
     if: always()
     
     steps:
+      - name: 📥 Baixar Artefatos do Runner Self-Hosted
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: 📊 Publicar Resultados dos Testes (executa em Linux se action for container-only)
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: artifacts/results.xml
+          check_name: 📊 Resultados E2E - Self-Hosted
+          comment_mode: always
+
       - name: 📊 Resumo Comparativo
         run: |
           echo "╔════════════════════════════════════════════╗"
