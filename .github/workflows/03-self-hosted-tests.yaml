@@ -17,25 +17,25 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     
     steps:
-      - name: 🖥️ Validar Ambiente do Runner (Windows)
+      - name: Validar Ambiente do Runner (Windows)
         shell: powershell
         run: |
-          Write-Host "════════════════════════════════════"
-          Write-Host "     INFORMAÇÕES DO RUNNER"
-          Write-Host "════════════════════════════════════"
-          Write-Host "🖥️ Hostname: $env:COMPUTERNAME"
+          Write-Host "===================================="
+          Write-Host "     RUNNER INFORMATION"
+          Write-Host "===================================="
+          Write-Host "Hostname: $env:COMPUTERNAME"
           $os = (Get-CimInstance Win32_OperatingSystem).Caption
           $version = (Get-CimInstance Win32_OperatingSystem).Version
-          Write-Host "📍 Sistema: $os ($version)"
-          Write-Host "💾 Processadores: $env:NUMBER_OF_PROCESSORS"
+          Write-Host "OS: $os ($version)"
+          Write-Host "Processors: $env:NUMBER_OF_PROCESSORS"
           $memGB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
-          Write-Host "🧠 Memória: ${memGB} GB"
-          Write-Host "📦 Node: $(node --version 2>$null)"
-          Write-Host "🧶 Yarn: $(yarn --version 2>$null)"
-          Write-Host "🐙 Git: $(git --version 2>$null)"
-          Write-Host "════════════════════════════════════"
+          Write-Host "Memory: ${memGB} GB"
+          Write-Host "Node: $(node --version 2>$null)"
+          Write-Host "Yarn: $(yarn --version 2>$null)"
+          Write-Host "Git: $(git --version 2>$null)"
+          Write-Host "===================================="
           Write-Host ""
-          Write-Host "Espaço em disco:"
+          Write-Host "Disk space:"
           Get-PSDrive -PSProvider FileSystem | Format-Table -AutoSize
 
       - name: 📡 Checkout do Repositório
