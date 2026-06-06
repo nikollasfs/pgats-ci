@@ -14,11 +14,11 @@ permissions:
 jobs:
   test-on-self-hosted:
     # Use a label do seu runner Windows (ajuste conforme sua máquina)
-    runs-on: [self-hosted, windows]
+    runs-on: [self-hosted, Windows]
     
     steps:
       - name: 🖥️ Validar Ambiente do Runner (Windows)
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "════════════════════════════════════"
           Write-Host "     INFORMAÇÕES DO RUNNER"
@@ -90,7 +90,7 @@ jobs:
       
       - name: ✅ Sumário da Execução
         if: always()
-        shell: pwsh
+        shell: powershell
         run: |
           $summary = @"
           # 📋 Sumário - Self-Hosted Runner
