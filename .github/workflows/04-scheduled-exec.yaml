@@ -1,48 +1,48 @@
 # CI de Nível 02 - Execução Agendada
 
 # nome da pipeline
-name: "Scheduled Execution"
+# name: "Scheduled Execution"
 
 # gatilhos / triggers - regras de disparo
 # gatilho manual = workflow_dispatch
 # gatilho agendado = schedule
 
-on:
-  schedule:
+# on:
+  # schedule:
     # cronograma de execução
     # 1 - minuto, 2 - hora, 3 dia do mês, 4 - mês, 5 - dia da semana
-    - cron: '*/6 * * * *'
+    # - cron: '*/6 * * * *'
 
 #tarefas dentro da pipeline = jobs
 
-jobs:
+# jobs:
     #nome do job
-    e2e-tests:
+    #e2e-tests:
         # maquina onde o job vai rodar
-        runs-on: ubuntu-latest
+        #runs-on: ubuntu-latest
 
         # passos do job
-        steps:
+        #steps:
             # clone do projeto
-            - uses: actions/checkout@v4
+          #  - uses: actions/checkout@v4
 
             # instalção do node
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: 24.x
+          #  - uses: actions/setup-node@v4
+          #    with:
+         #         node-version: 24.x
 
             # instalação do Yarn
-            - name: Instalando Yarn
-              run: npm install -g yarn
+         #   - name: Instalando Yarn
+         #     run: npm install -g yarn
             
             #   instalação das dependências
-            - name: Instalando dependências
-              run: yarn
+        #    - name: Instalando dependências
+         #     run: yarn
             
             # instalação dos Browsers do Playwright
-            - name: Instalando Browsers do Playwright
-              run: yarn playwright install
+         #   - name: Instalando Browsers do Playwright
+         #     run: yarn playwright install
             
             # executar os testes e2e
-            - name: Executando testes e2e
-              run: yarn run e2e
+           # - name: Executando testes e2e
+           #   run: yarn run e2e
